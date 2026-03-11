@@ -95,4 +95,21 @@ public static class Extractor
         }
 
     }
+
+    public static void ExtractFromLocaleFile(Context context, string fileName, string outputDir)
+    {
+        Console.WriteLine($"Extracting from {fileName}");
+
+        context.AddFile(new LinearFile(context, fileName));
+        LocaleFile locale = FileFactory.Read<LocaleFile>(context, fileName);
+
+        foreach (LocaleLanguage language in locale.Languages)
+        {
+            string outputPath = Path.Combine(outputDir, $"{fileName}_{language.LanguageCode}.txt");
+            if (Path.GetDirectoryName(outputPath) is { } outputPathDir)
+                Directory.CreateDirectory(outputPathDir);
+
+            File.WriteAllLines(outputPath, language.Strings.Select(x => x.Value));
+        }
+    }
 }

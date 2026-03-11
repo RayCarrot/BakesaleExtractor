@@ -49,6 +49,11 @@ static bool extractFile(Context context, string fileName, string output)
         Extractor.ExtractFromRIFFResourceFile(context, fileName, output);
         return true;
     }
+    else if (fileName.EndsWith(".strings", StringComparison.InvariantCultureIgnoreCase))
+    {
+        Extractor.ExtractFromLocaleFile(context, fileName, output);
+        return true;
+    }
     else
     {
         return false;

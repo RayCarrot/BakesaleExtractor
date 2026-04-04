@@ -6,6 +6,13 @@ using K4os.Compression.LZ4;
 
 public static class Extractor
 {
+    private static string GetExportPath(string outputDir, string filePath)
+    {
+        string dir = Path.GetDirectoryName(filePath) ?? String.Empty;
+        string fileName = Path.GetFileNameWithoutExtension(filePath);
+        return Path.Combine(outputDir, dir, fileName);
+    }
+
     public static void ExtractFromRIFFResourceFile(Context context, string fileName, string outputDir)
     {
         Console.WriteLine($"Extracting from {fileName}");
@@ -42,7 +49,7 @@ public static class Extractor
                     byte[] imgData = new byte[fmt.Width * fmt.Height * 4];
                     LZ4Codec.Decode(data.Data, imgData);
 
-                    string outputPath = Path.Combine(outputDir, $"{fileName}_{fmt.Name}.png");
+                    string outputPath = $"{GetExportPath(outputDir, fileName)}_{fmt.Name}.png";
                     if (Path.GetDirectoryName(outputPath) is { } outputPathDir)
                         Directory.CreateDirectory(outputPathDir);
 
@@ -74,7 +81,7 @@ public static class Extractor
                 {
                     using ZLibStream zlibStream = new(new MemoryStream(waveData.Data), CompressionMode.Decompress);
 
-                    string outputPath = Path.Combine(outputDir, $"{fileName}_{index:00}.wav");
+                    string outputPath = $"{GetExportPath(outputDir, fileName)}_{index:00}.wav";
                     if (Path.GetDirectoryName(outputPath) is { } outputPathDir)
                         Directory.CreateDirectory(outputPathDir);
 
@@ -105,7 +112,7 @@ public static class Extractor
 
         foreach (LocaleLanguage language in locale.Languages)
         {
-            string outputPath = Path.Combine(outputDir, $"{fileName}_{language.LanguageCode}.txt");
+            string outputPath = $"{GetExportPath(outputDir, fileName)}_{language.LanguageCode}.txt";
             if (Path.GetDirectoryName(outputPath) is { } outputPathDir)
                 Directory.CreateDirectory(outputPathDir);
 

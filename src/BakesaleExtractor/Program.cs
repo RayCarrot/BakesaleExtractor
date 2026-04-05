@@ -72,7 +72,7 @@ static bool extractFile(Context context, StringCache stringCache, string fileNam
     }
     else if (fileName.EndsWith(".strings", StringComparison.InvariantCultureIgnoreCase))
     {
-        Extractor.ExtractFromLocaleFile(context, fileName, output);
+        Extractor.ExtractFromLocaleFile(context, stringCache, fileName, output);
         return true;
     }
     else

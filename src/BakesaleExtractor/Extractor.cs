@@ -1,4 +1,5 @@
 ﻿using System.IO.Compression;
+using System.Text.Json;
 using BinarySerializer;
 using BinarySerializer.Audio.RIFF;
 using ImageMagick;
@@ -153,19 +154,45 @@ public static class Extractor
 
     }
 
-    public static void ExtractFromLocaleFile(Context context, string fileName, string outputDir)
+    public static void ExtractFromLocaleFile(Context context, StringCache stringCache, string fileName, string outputDir)
     {
         Console.WriteLine($"Extracting from {fileName}");
 
         context.AddFile(new LinearFile(context, fileName));
         LocaleFile locale = FileFactory.Read<LocaleFile>(context, fileName);
 
+        string localeOutputDir = GetExportPath(outputDir, fileName);
+
+        JsonSerializerOptions serializerOptions = new()
+        {
+            WriteIndented = true, 
+            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+        };
+
+        Dictionary<int, uint> stringHashes = new();
+        for (int i = 0; i < locale.StringKeyHashes.Length; i++)
+        {
+            uint hash = locale.StringKeyHashes[i];
+            if (hash != 0)
+                stringHashes.Add(locale.KeyHashIndexToStringIndexTable[i], hash);
+        }
+
         foreach (LocaleLanguage language in locale.Languages)
         {
-            string outputPath = $"{GetExportPath(outputDir, fileName)}_{language.LanguageCode}.txt";
+            string outputPath = Path.Combine(localeOutputDir, $"{language.LanguageCode}.json");
             EnsureFileDirectoryExists(outputPath);
 
-            File.WriteAllLines(outputPath, language.Strings.Select(x => x.Value));
+            SortedDictionary<string, string> strings = new();
+            for (int i = 0; i < language.Strings.Length; i++)
+            {
+                uint hash = stringHashes[i];
+                if (!stringCache.TryGetValue(hash, out string? key))
+                    key = $"_unknown_{hash:X8}";
+                strings[key] = language.Strings[i].Value;
+            }
+
+            string json = JsonSerializer.Serialize(strings, serializerOptions);
+            File.WriteAllText(outputPath, json);
         }
     }
 }

@@ -117,34 +117,48 @@ public static class Extractor
         // Waves
         else if (riff.Data is RIFF_Chunk_RIFF { Type: "WBNK" } waveBank)
         {
+            string wavesOutputDir = GetExportPath(outputDir, fileName);
+
+            RIFF_Chunk_Waves? wavs = waveBank.GetChunk<RIFF_Chunk_Waves>();
             RIFF_Chunk_List? list = waveBank.GetChunk<RIFF_Chunk_List>();
 
-            if (list == null)
+            if (list == null || wavs == null)
             {
                 Console.WriteLine("WARNING: Waves file is missing wave list. Skipping file.");
                 return;
             }
 
-            int index = 0;
-            foreach (RIFF_Chunk chunk in list.Chunks)
+            Dictionary<int, uint> waveHashes = new();
+            for (int i = 0; i < wavs.WaveNameHashes.Length; i++)
             {
+                uint hash = wavs.WaveNameHashes[i];
+                if (hash != 0)
+                    waveHashes.Add(wavs.NameHashIndexToWaveIndexTable[i], hash);
+            }
+
+            for (int i = 0; i < list.Chunks.Length; i++)
+            {
+                RIFF_Chunk chunk = list.Chunks[i];
                 if (chunk.Data is RIFF_Chunk_WaveData waveData)
                 {
                     using ZLibStream zlibStream = new(new MemoryStream(waveData.Data), CompressionMode.Decompress);
 
-                    string outputPath = $"{GetExportPath(outputDir, fileName)}_{index:00}.wav";
-                    if (Path.GetDirectoryName(outputPath) is { } outputPathDir)
-                        Directory.CreateDirectory(outputPathDir);
+                    string waveOutputPath;
+                    uint hash = waveHashes[i];
+                    if (stringCache.TryGetValue(hash, out string? name))
+                        waveOutputPath = Path.Combine(wavesOutputDir, $"{name}.wav");
+                    else
+                        waveOutputPath = Path.Combine(wavesOutputDir, "_unnamed", $"{i}_{hash:X8}.wav");
 
-                    using Stream fileStream = File.Create(outputPath);
+                    EnsureFileDirectoryExists(waveOutputPath);
+
+                    using Stream fileStream = File.Create(waveOutputPath);
                     zlibStream.CopyTo(fileStream);
                 }
                 else
                 {
                     Console.WriteLine("WARNING: Unknown wave data. Skipping wave.");
                 }
-
-                index++;
             }
         }
         else

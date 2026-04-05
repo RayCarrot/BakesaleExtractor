@@ -10,7 +10,7 @@ public class LocaleFile : BinarySerializable
     public Pointer LanguagesOffset { get; set; }
     public int LanguagesCount { get; set; }
 
-    public int[] StringKeyHashes { get; set; } // Seems to use MurmurHash
+    public uint[] StringKeyHashes { get; set; } // MurmurHash3
     public int[] KeyHashIndexToStringIndexTable { get; set; }
     public LocaleLanguage[] Languages { get; set; }
 
@@ -25,7 +25,7 @@ public class LocaleFile : BinarySerializable
         LanguagesCount = s.Serialize<int>(LanguagesCount, name: nameof(LanguagesCount));
 
         // Serialize data from offset
-        s.DoAt(StringKeyHashesOffset, () => StringKeyHashes = s.SerializeArray<int>(StringKeyHashes, StringKeyHashesCount, name: nameof(StringKeyHashes)));
+        s.DoAt(StringKeyHashesOffset, () => StringKeyHashes = s.SerializeArray<uint>(StringKeyHashes, StringKeyHashesCount, name: nameof(StringKeyHashes)));
         s.DoAt(KeyHashIndexToStringIndexTableOffset, () => KeyHashIndexToStringIndexTable = s.SerializeArray<int>(KeyHashIndexToStringIndexTable, KeyHashIndexToStringIndexTableCount, name: nameof(KeyHashIndexToStringIndexTable)));
         s.DoAt(LanguagesOffset, () => Languages = s.SerializeObjectArray<LocaleLanguage>(Languages, LanguagesCount, name: nameof(Languages)));
     }

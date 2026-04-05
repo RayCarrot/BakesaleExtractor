@@ -13,7 +13,13 @@ public static class Extractor
         return Path.Combine(outputDir, dir, fileName);
     }
 
-    public static void ExtractFromRIFFResourceFile(Context context, string fileName, string outputDir)
+    private static void EnsureFileDirectoryExists(string filePath)
+    {
+        if (Path.GetDirectoryName(filePath) is { } outputPathDir)
+            Directory.CreateDirectory(outputPathDir);
+    }
+
+    public static void ExtractFromRIFFResourceFile(Context context, StringCache stringCache, string fileName, string outputDir)
     {
         Console.WriteLine($"Extracting from {fileName}");
 
@@ -23,6 +29,8 @@ public static class Extractor
         // Sprites
         if (riff.Data is RIFF_Chunk_RIFF { Type: "SPRT" } sprites)
         {
+            string spritesOutputDir = GetExportPath(outputDir, fileName);
+
             RIFF_Chunk_List? list = sprites.GetChunk<RIFF_Chunk_List>();
 
             if (list == null)
@@ -31,36 +39,78 @@ public static class Extractor
                 return;
             }
 
-            foreach (RIFF_Chunk chunk in list.Chunks)
+            List<MagickImage> images = [];
+            try
             {
-                if (chunk.Data is RIFF_Chunk_RIFF { Type: "IMG " } img)
+                foreach (RIFF_Chunk chunk in list.Chunks)
                 {
-                    RIFF_Chunk_ImgFormat? fmt = img.GetChunk<RIFF_Chunk_ImgFormat>();
-                    RIFF_Chunk_Data? data = img.GetChunk<RIFF_Chunk_Data>();
-
-                    if (fmt == null || data == null)
+                    if (chunk.Data is RIFF_Chunk_RIFF { Type: "IMG " } img)
                     {
-                        Console.WriteLine("WARNING: Sprite is missing format or data chunk. Skipping sprite.");
-                        continue;
+                        RIFF_Chunk_ImgFormat? fmt = img.GetChunk<RIFF_Chunk_ImgFormat>();
+                        RIFF_Chunk_Data? data = img.GetChunk<RIFF_Chunk_Data>();
+
+                        if (fmt == null || data == null)
+                        {
+                            Console.WriteLine("WARNING: Sprite is missing format or data chunk. Skipping sprite.");
+                            continue;
+                        }
+
+                        Console.WriteLine($"Extracting {fmt.Name}");
+
+                        byte[] imgData = new byte[fmt.Width * fmt.Height * 4];
+                        LZ4Codec.Decode(data.Data, imgData);
+
+                        string outputPath = Path.Combine(spritesOutputDir, "_sheets", $"{fmt.Name}.png");
+                        EnsureFileDirectoryExists(outputPath);
+
+                        MagickImage image = new(imgData, new MagickReadSettings()
+                        {
+                            Width = fmt.Width,
+                            Height = fmt.Height,
+                            Format = MagickFormat.Rgba,
+                        });
+                        image.Write(outputPath);
+                        images.Add(image);
+                    }
+                }
+
+                RIFF_Chunk_Sprites? sprs = sprites.GetChunk<RIFF_Chunk_Sprites>();
+
+                if (sprs != null)
+                {
+                    Dictionary<int, uint> spriteHashes = new();
+                    for (int i = 0; i < sprs.SpriteNameHashes.Length; i++)
+                    {
+                        uint hash = sprs.SpriteNameHashes[i];
+                        if (hash != 0)
+                            spriteHashes.Add(sprs.NameHashIndexToSpriteIndexTable[i], hash);
                     }
 
-                    Console.WriteLine($"Extracting {fmt.Name}");
+                    Console.WriteLine("Extracting sprites");
 
-                    byte[] imgData = new byte[fmt.Width * fmt.Height * 4];
-                    LZ4Codec.Decode(data.Data, imgData);
-
-                    string outputPath = $"{GetExportPath(outputDir, fileName)}_{fmt.Name}.png";
-                    if (Path.GetDirectoryName(outputPath) is { } outputPathDir)
-                        Directory.CreateDirectory(outputPathDir);
-
-                    MagickImage image = new(imgData, new MagickReadSettings()
+                    for (int i = 0; i < sprs.Sprites.Length; i++)
                     {
-                        Width = fmt.Width,
-                        Height = fmt.Height,
-                        Format = MagickFormat.Rgba,
-                    });
-                    image.Write(outputPath);
+                        Sprite sprite = sprs.Sprites[i];
+                        using IMagickImage<byte> image = images[sprite.ImageIndex].Clone();
+                        image.Crop(new MagickGeometry(sprite.XPosition, sprite.YPosition, (uint)sprite.Width, (uint)sprite.Height));
+
+                        string spriteOutputPath;
+                        uint hash = spriteHashes[i];
+                        if (stringCache.TryGetValue(hash, out string? name))
+                            spriteOutputPath = Path.Combine(spritesOutputDir, $"{name}.png");
+                        else
+                            spriteOutputPath = Path.Combine(spritesOutputDir, "_unnamed", $"{i}_{hash:X8}.png");
+
+                        EnsureFileDirectoryExists(spriteOutputPath);
+
+                        image.Write(spriteOutputPath);
+                    }
                 }
+            }
+            finally
+            {
+                foreach (MagickImage img in images)
+                    img.Dispose();
             }
         }
         // Waves
@@ -113,8 +163,7 @@ public static class Extractor
         foreach (LocaleLanguage language in locale.Languages)
         {
             string outputPath = $"{GetExportPath(outputDir, fileName)}_{language.LanguageCode}.txt";
-            if (Path.GetDirectoryName(outputPath) is { } outputPathDir)
-                Directory.CreateDirectory(outputPathDir);
+            EnsureFileDirectoryExists(outputPath);
 
             File.WriteAllLines(outputPath, language.Strings.Select(x => x.Value));
         }

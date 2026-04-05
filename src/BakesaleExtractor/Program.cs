@@ -36,12 +36,19 @@ riffSettings.RegisterChunkResolver("fmt ", (s, data, chunkSize, name) =>
 riffSettings.RegisterChunkResolver("wdta", (s, data, chunkSize, name) =>
     s.SerializeObject<RIFF_Chunk_WaveData>((RIFF_Chunk_WaveData)data, x => x.Pre_ChunkSize = chunkSize, name: name));
 
+StringCache stringCache = new();
+if (Directory.Exists("Strings"))
+{
+    foreach (string stringsFilePath in Directory.GetFiles("Strings", "*.txt"))
+        stringCache.AddFromFile(stringsFilePath);
+}
+
 if (inputIsFile)
 {
     using Context context = new(Path.GetDirectoryName(input) ?? String.Empty, serializerLogger: serializerLogger);
     context.AddSettings(riffSettings);
 
-    bool success = extractFile(context, Path.GetFileName(input), output);
+    bool success = extractFile(context, stringCache, Path.GetFileName(input), output);
 
     if (!success)
         Console.WriteLine("Unknown file format");
@@ -52,15 +59,15 @@ else if (inputIsDir)
     context.AddSettings(riffSettings);
 
     foreach (string file in Directory.GetFiles(input, "*.*", SearchOption.AllDirectories))
-        extractFile(context, Path.GetRelativePath(input, file), output);
+        extractFile(context, stringCache, Path.GetRelativePath(input, file), output);
 }
 
-static bool extractFile(Context context, string fileName, string output)
+static bool extractFile(Context context, StringCache stringCache, string fileName, string output)
 {
     if (fileName.EndsWith(".waves", StringComparison.InvariantCultureIgnoreCase) ||
         fileName.EndsWith(".sprite", StringComparison.InvariantCultureIgnoreCase))
     {
-        Extractor.ExtractFromRIFFResourceFile(context, fileName, output);
+        Extractor.ExtractFromRIFFResourceFile(context, stringCache, fileName, output);
         return true;
     }
     else if (fileName.EndsWith(".strings", StringComparison.InvariantCultureIgnoreCase))

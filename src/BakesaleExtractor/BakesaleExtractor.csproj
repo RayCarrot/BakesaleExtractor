@@ -10,11 +10,18 @@
   <ItemGroup>
     <PackageReference Include="K4os.Compression.LZ4" Version="1.3.8" />
     <PackageReference Include="Magick.NET-Q8-AnyCPU" Version="14.10.4" />
+    <PackageReference Include="murmurhash" Version="1.0.3" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\submodules\BinarySerializer.Audio\src\BinarySerializer.Audio.csproj" />
     <ProjectReference Include="..\..\submodules\BinarySerializer\src\BinarySerializer.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Strings\*.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

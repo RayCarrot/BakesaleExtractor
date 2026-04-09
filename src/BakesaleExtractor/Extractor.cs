@@ -70,6 +70,8 @@ public static class Extractor
                             Height = fmt.Height,
                             Format = MagickFormat.Rgba,
                         });
+
+                        image.Strip();
                         image.Write(outputPath);
                         images.Add(image);
                     }
@@ -104,6 +106,7 @@ public static class Extractor
 
                         EnsureFileDirectoryExists(spriteOutputPath);
 
+                        image.Strip();
                         image.Write(spriteOutputPath);
                     }
                 }

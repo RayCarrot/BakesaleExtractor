@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/Binary/">
     <Project Path="../submodules/BinarySerializer.Audio/src/BinarySerializer.Audio.csproj" />
+    <Project Path="../submodules/BinarySerializer.Bakesale/src/BinarySerializer.Bakesale.csproj" />
     <Project Path="../submodules/BinarySerializer/src/BinarySerializer.csproj" />
   </Folder>
   <Project Path="BakesaleExtractor/BakesaleExtractor.csproj" />

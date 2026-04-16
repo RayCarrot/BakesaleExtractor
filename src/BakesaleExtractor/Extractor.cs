@@ -2,6 +2,7 @@
 using System.Text.Json;
 using BinarySerializer;
 using BinarySerializer.Audio.RIFF;
+using BinarySerializer.Bakesale;
 using ImageMagick;
 using K4os.Compression.LZ4;
 

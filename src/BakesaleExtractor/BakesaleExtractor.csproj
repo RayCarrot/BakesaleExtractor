@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\submodules\BinarySerializer.Audio\src\BinarySerializer.Audio.csproj" />
+    <ProjectReference Include="..\..\submodules\BinarySerializer.Bakesale\src\BinarySerializer.Bakesale.csproj" />
     <ProjectReference Include="..\..\submodules\BinarySerializer\src\BinarySerializer.csproj" />
   </ItemGroup>
 

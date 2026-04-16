@@ -1,4 +1,6 @@
 ﻿using BinarySerializer;
+using BinarySerializer.Audio.RIFF;
+using BinarySerializer.Bakesale;
 
 if (args.Length < 1)
 {
@@ -29,14 +31,8 @@ Directory.CreateDirectory(output);
 
 ISerializerLogger serializerLogger = new FileSerializerLogger(Path.Combine(output, "Log.txt"));
 RIFFSettings riffSettings = new();
-riffSettings.RegisterChunkResolver("sprs", (s, data, chunkSize, name) =>
-    s.SerializeObject<RIFF_Chunk_Sprites>((RIFF_Chunk_Sprites)data, x => x.Pre_ChunkSize = chunkSize, name: name));
-riffSettings.RegisterChunkResolver("fmt ", (s, data, chunkSize, name) =>
-    s.SerializeObject<RIFF_Chunk_ImgFormat>((RIFF_Chunk_ImgFormat)data, x => x.Pre_ChunkSize = chunkSize, name: name));
-riffSettings.RegisterChunkResolver("wavs", (s, data, chunkSize, name) =>
-    s.SerializeObject<RIFF_Chunk_Waves>((RIFF_Chunk_Waves)data, x => x.Pre_ChunkSize = chunkSize, name: name));
-riffSettings.RegisterChunkResolver("wdta", (s, data, chunkSize, name) =>
-    s.SerializeObject<RIFF_Chunk_WaveData>((RIFF_Chunk_WaveData)data, x => x.Pre_ChunkSize = chunkSize, name: name));
+riffSettings.RegisterSprites();
+riffSettings.RegisterWaves();
 
 StringCache stringCache = new();
 if (Directory.Exists("Strings"))

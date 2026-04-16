@@ -205,7 +205,7 @@ public static class Extractor
             {
                 uint hash = stringHashes[i];
                 if (!stringCache.TryGetValue(hash, out string? key))
-                    key = $"_unknown_{hash:X8}";
+                    key = $"_unnamed_{hash:X8}";
                 strings[key] = language.Strings[i].Value;
             }
 
